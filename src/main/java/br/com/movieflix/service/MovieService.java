@@ -5,9 +5,12 @@ import br.com.movieflix.entity.Category;
 import br.com.movieflix.entity.Movie;
 import br.com.movieflix.entity.Streaming;
 import br.com.movieflix.repository.MovieRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,14 +35,20 @@ public class MovieService {
         return movieRepository.save(movie);
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(value = "Movie", key = "'all_movies_page_' + #pageable.pageNumber + '_' + #pageable.pageSize + '_' + #pageable.sort.toString()")
     public Page<Movie> findAll(Pageable pageable) {
         return movieRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(value = "Movie", key = "#id")
     public Optional<Movie> findById(Long id) {
         return movieRepository.findById(id);
     }
 
+    @Transactional
+    @CacheEvict(value = "Movie", allEntries = true)
     public Optional<Movie> update(Long id, Movie movieUpdated) {
         Optional<Movie> movie = movieRepository.findById(id);
         if (movie.isPresent()) {
@@ -60,11 +69,15 @@ public class MovieService {
         return Optional.empty();
     }
 
+    @Transactional
+    @CacheEvict(value = "Movie", allEntries = true)
     public void delete(Long id) {
         movieRepository.deleteById(id);
     }
 
 
+    @Transactional(readOnly = true)
+    @Cacheable(value = "Movie")
     public List<Movie> findMoviesByCategory(String categoryName) {
         List<Movie> movies = new ArrayList<>();
 
